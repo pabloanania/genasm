@@ -18,13 +18,14 @@
                 "reveal": "always",
                 "focus": false,
                 "panel": "shared"
-            }
+            },
+            "problemMatcher": []
         },
         {
             "label": "Run",
             "type": "shell",
             "windows": {
-                "command": "c:\\sgdk\\emu\\mess\\mess64.exe genesis -debug -cart rom.bin"
+                "command": "c:\\sgdk\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
             },
             "group": {
                 "kind": "build",

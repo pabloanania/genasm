@@ -88,9 +88,65 @@
 
 EntryPoint:
 Loop:
-    move.l #0xF, d0 ; Move 15 into register d0
-    move.l d0, d1   ; Move contents of register d0 into d1
-    jmp Loop        ; Jump back up to 'Loop'
+    jsr MOVExample
+    jsr ADDExample
+    jsr CLRExample
+    jsr DBRAExample
+    jsr BEQExample
+    jmp Loop
+
+MOVExample:
+    move.l #$10, d0   ; Moves the hex value 0x10 (decimal 16) to register d0
+    move.l #%0101, d0 ; Moves the binary value 0101 (decimal 5) to register d0
+    move.l #12, d0    ; Moves the decimal value 12 to register d0
+    move.l d1, d0     ; Moves the value stored in register d1 to register d0
+    move.l 0x8000, d0 ; Moves the value stored at address 0x8000 to register d0
+    move.l d0, 0x8000 ; Moves the value stored in register d0 to address 0x8000
+    move.l (a0), d0   ; Moves the value stored at the address in a0 to register d0
+    move.l d0, (a0)   ; Moves the value stored in register d0 to the address stored in register a0
+    rts
+
+ADDExample:
+    move.l #$2, d0
+    move.l #$4, d1
+    move.l #$6, 0xFF8000
+    add.l #$1, d0           ; Adds 9 hexa to d1 register
+    add.l d0, d1            ; Adds d0 content to d1
+    add.l 0xFF8000, d0      ; Adds content at memory address FF8000 (currently 6 in hexa) to d0
+    add.l d0, 0xFF8000      ; Test
+    rts
+
+CLRExample:
+    clr.l d0
+    clr.l d1
+    clr.l 0xFF8000
+    rts
+
+DBRAExample:
+    move.b #$4, d0  ; Looping 5 iterations (includes the 0th iteration)
+    @Label:         ; Local Label
+    add.l #$1, d1   ; Add 1 do register d1
+    dbra d0, @Label ; Test to see if d0 is zero yet, and if not decrement it and jump to Label
+    clr.l d1        ; Loop has finished, clear d1
+    rts
+
+BEQExample:
+    move.l #String, a0      ; Move address of string to a0
+    jsr GetStringLength     ; Jump to the GetStringLength subroutine
+    rts
+String:
+    dc.b "HELLO WORLD", 0   ; A zero-terminated string (after the text inserts a zero, used in compare)
+GetStringLength:
+    clr.l d0                ; Clear d0, ready to begin counting
+    @FindTerm:
+    move.b (a0)+, d1        ; Move byte from address in a0 to d1, and then increment the address of a0 by 1 byte
+    cmp.b #$0, d1           ; Test if byte is zero
+    beq.b @End              ; If byte was zero, branch to end
+    addq.l #$1, d0          ; Increment counter
+    jmp @FindTerm           ; Jump back to FindTerm to loop again
+    @End:
+    rts                     ; End of search, return back. Result is in d0
+
  
 HBlankInterrupt:
 VBlankInterrupt:

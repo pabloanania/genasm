@@ -1,4 +1,12 @@
 # Cheatsheet m68K opcodes
+## DC
+- Sintaxis: \(etiqueta opcional\) DC.\[longitud\]
+- Descripción: Declare constant. Declara una constante que se almacena en la rom, la etiqueta permite referenciarla más tarde
+- Ejemplos:
+```
+    DC.W "HELLO WORLD"
+```
+
 ## MOVE
 - Sintaxis: MOVE.\[longitud\] \[origen\],\[destino\]
 - Descripción: Mueve el valor de longitud definida desde origen hacia destino. Origen y destino pueden ser: Valores "inmediatos" (simil hardcodeo), valores en un registro o valores en una posición de memoria (d ó a)
@@ -15,12 +23,11 @@ MOVE.L d0, (a0) ; Mueve el valor guardado en d0 sobreescribiendo el valor almace
 
 ## ADD
 - Sintaxis: ADD.\[longitud\] \[origen\],\[destino\]
-- Descripción: Añade el valor de origen al valor en destino, almacenando el resultado en destino. Origen puede ser: Valor inmediato o contenidos de un registro (d ó a) (posición de memoria no?). Destino pueden ser un registro (d ó a)
+- Descripción: Añade el valor de origen al valor en destino, almacenando el resultado en destino. Origen puede ser: Valor inmediato, contenidos de un registro (d ó a) ó valor en posición de memoria. Destino pueden ser un registro (d ó a) ó valor en posición de memoria
 - Variantes:
 1. ADDI: Add immediate. Añade sólo valor inmediato al registro (se supone que es más rápido que ADD)
 2. ADDA: Add address. Añade el valor a una dirección (dirección en si, no el valor en esa dirección)
 3. ADDQ: Add quickly. Añade pequeño valor inmediato (1 a 8) al registro destino (se supone que es el más rápido)
-4. ADDX: Ver (?)
 - Ejemplos:
 ```
 ADD.W d1, d2 ; Añade el word almacenado en el registro d1 al valor en el registro d2
@@ -38,7 +45,7 @@ ADDQ.B #0x5, d1 ; Añade rápidamente el valor inmediato 5 (en decimal) en el va
 
 ## CLR
 - Sintaxis: CLR.\[longitud\] \[destino\]
-- Descripción: Setea a 0 la información almacenada. Destino puede ser: Contenidos de un registro (d ó a) (posición de memoria no?)
+- Descripción: Setea a 0 la información almacenada. Destino puede ser: Contenidos de un registro (d ó a) ó valor en posición de memoria
 - Ejemplos:
 ```
 CLR.L d1 ; Limpia todo el contenido del registro d1
@@ -62,7 +69,7 @@ LOOP:
     JSR Function ; Llama a la función
 
 Function:
-    \[...\] ; Hacer algo
+    <...> ; Hacer algo
     rts ; Vuelve a donde se llamó Function
 ```
 
@@ -74,13 +81,13 @@ Function:
     MOVE.B #0x4, d0 ; Loopea 5 iteraciones (incluye iteración 0)
  
 Loop:
-    \[...\] ; Hacer algo
+    <...> ; Hacer algo
     DBRA d0, Loop ; Decrementa 1 de d0 y si es mayor a 0 salta a Loop
 ```
 
 ## CMP
 - Sintaxis: CMP \[valor\], \[destino\]
-- Descripción: Compara si el valor es igual al que está en destino. El resultado de la comparación se almacena en el registro status (ver?) para luego ser utilizado (por ejemplo por BEQ)
+- Descripción: Compara si el valor es igual al que está en destino. El resultado de la comparación se almacena en el flag del cpu (por ejemplo Z es 0) para luego ser utilizado (por ejemplo por BEQ)
 - Ejemplos: Ver BEQ
 
 ## BEQ
@@ -98,7 +105,7 @@ Loop:
 ```
     CMP.B #$0, d1 ; Prueba si d1 es 0
     BEQ.B @End ; Si la comparación da igual, salta a @End, sino sigue
-    \[...\] ; Hacer algo
+    <...> ; Hacer algo
 
     @End:
     RTS

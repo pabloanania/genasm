@@ -10,6 +10,9 @@
 ## MOVE
 - Sintaxis: MOVE.\[longitud\] \[origen\],\[destino\]
 - Descripción: Mueve el valor de longitud definida desde origen hacia destino. Origen y destino pueden ser: Valores "inmediatos" (simil hardcodeo), valores en un registro o valores en una posición de memoria (d ó a)
+- Variantes:
+1. MOVEM: Move multiple. Permite mover información desde/hacia múltiples registros y/o direcciones de memoria
+2. MOVEA: Move address. Mueve los contenidos de origen a la dirección destino
 - Ejemplos:
 ```
 MOVE.L #$A, d0 ; Mueve el valor A en hexa (10 en decimal) al registro d0
@@ -19,6 +22,7 @@ MOVE.L d1, d0 ; Mueve el contenido almacenado en el registro d1 a d0
 MOVE.L 0x5000, d0 ; Mueve el valor guardado en dirección 0x5000 al registro d0
 MOVE.L (a0), d0 ; Mueve el valor guardado en la dirección almacenada en a0 al registro d0
 MOVE.L d0, (a0) ; Mueve el valor guardado en d0 sobreescribiendo el valor almacenado en la dirección que contiene el registro a0
+MOVEM.L (a0), d0-d7/a1-a7 ; Mueve el valor guardado en la dirección de a0 al resto de los registros de datos y direcciones
 ```
 
 ## ADD
@@ -109,6 +113,22 @@ Loop:
 
     @End:
     RTS
+```
+
+## ANDI
+- Sintaxis: ANDI \[máscara\], \[destino\]
+- Descripción: AND immediate. Realiza un AND con un número inmediato como máscara. Almacena el resultado en el destino
+- Ejemplo:
+```
+    ANDI.B #$F, D0 ; AND lógico a D0 con 0xF (1111 en binario)
+```
+
+## BTST
+- Sintaxis: BTST \[número de bit del destino\], \[destino\]
+- Descripción: El bit especificado del operando destino es testeado y el resultado de la comparación se guarda en los flags del CPU
+- Ejemplo:
+```
+    BTST #$0, 0x00A11100 ; Prueba el bit 0 del puerto indicado
 ```
 
 ### Documentación

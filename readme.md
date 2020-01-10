@@ -131,5 +131,13 @@ Loop:
     BTST #$0, 0x00A11100 ; Prueba el bit 0 del puerto indicado
 ```
 
+## LEA
+- Sintaxis: LEA \[origen\], \[destino\]
+- Descripción: Load effective address. Carga la dirección o etiqueta efectiva al registro destino
+- Ejemplo:
+```
+    LEA Table, A0 ; Carga la dirección de la etiqueta Table en a0
+```
+
 ### Documentación
 - [M64K instruction set](http://wpage.unina.it/rcanonic/didattica/ce1/docs/68000.pdf)

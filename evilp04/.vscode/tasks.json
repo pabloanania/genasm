@@ -7,7 +7,8 @@
             "label": "Compile",
             "type": "shell",
             "windows": {
-                "command": "c:\\sgdk\\prj\\asm\\bin\\asm68k.exe /p source.asm,rom.bin"
+                "command": "..\\bin\\asm68k.exe",
+                "args": ["/p","${cwd}\\source.asm",",","${cwd}\\rom.bin"]
             },
             "group": {
                 "kind": "build",
@@ -25,7 +26,7 @@
             "label": "Run",
             "type": "shell",
             "windows": {
-                "command": "c:\\sgdk\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
+                "command": "d:\\sgdk\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
             },
             "group": {
                 "kind": "build",
@@ -35,7 +36,7 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": false,
-                "panel": "shared"
+                "panel": "shared",
             },
             "problemMatcher": []
         }

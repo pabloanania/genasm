@@ -133,7 +133,7 @@ Loop:
 
 ## LEA
 - Sintaxis: LEA \[origen\], \[destino\]
-- Descripción: Load effective address. Carga la dirección o etiqueta efectiva al registro destino
+- Descripción: Load effective address. Carga la dirección o etiqueta efectiva al registro destino. Más rápido que MOVE
 - Ejemplo:
 ```
     LEA Table, A0 ; Carga la dirección de la etiqueta Table en a0

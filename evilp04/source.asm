@@ -206,10 +206,11 @@ RegistersClear:
     movem.l (a0), d1-d7/a0-a7 ; Multiple move value at a0 (0) to all registers
     move #0x2700, sr          ; Init status register (no trace, A7 is Interrupt Stack Pointer, no interrupts, clear condition code bits)
 
+
 ; *** MAIN ***
 Main:
-    move.w #0x8F02, 0x00C00004      ; Set VDP autoincrement to 2 bytes so we can send "streaming" data. We send that word (parameter) to the VDP control port (x00C00004)
-    move.l #0xC0000003, 0x00C00004  ; Set up VDP to write to CRAM address 0x0000. The calculation of the 0xC0000003 follows a special bit structure. Writes to control port
+    move.w #0x8F02, 0x00C00004      ; Set VDP autoincrement to 2 bytes (1 word) so we can send "streaming" data. We send that word (parameter) to the VDP control port (x00C00004)
+    move.l #0xC0000003, 0x00C00004  ; Set up VDP to write palette data to CRAM address 0x0000. The calculation of the 0xC0000003 follows a special bit structure. Writes to control port
     lea Palette, a0                 ; Load address of Palette into a0
     move.l #0x07, d0                ; 32 bytes (8 longwords) of palette data
  
@@ -217,17 +218,17 @@ Main:
     move.l (a0)+, 0x00C00000        ; Move palette data to VDP data port, and increment source address
     dbra d0, @PaletteLoop
 
-    move.w #0x8708, 0x00C00004      ; Set background colour to palette 8, colour 1
+    move.w #0x8702, 0x00C00004      ; Set background colour to palette 0, colour 2
 
-    move.l #0x40200000, 0x00C00004  ; Set up VDP to write to VRAM address 0x0020
+    move.l #0x40200000, 0x00C00004  ; Set up VDP to write tile data (characters) to VRAM address 0x0020
     lea Characters, a0              ; Load address of Characters into a0
-    move.l #0x37, d0                ; 32*7 bytes of font data (56 longwords)
+    move.l #0x37, d0                ; 56 longwords of character data
  
     @CharacterLoop:
     move.l (a0)+, 0x00C00000        ; Move character data to VDP data port, and increment source address
     dbra d0, @CharacterLoop
 
-    move.l #0x40000003, 0x00C00004 ; Set up VDP to write to VRAM address 0xC000 (Plane A)
+    move.l #0x40000003, 0x00C00004 ; Set up VDP to write "tile positioning" to VRAM address 0xC000 (Plane A)
  
     ; Low plane, palette 0, no flipping, plus tile ID...
     move.w #0x0001, 0x00C00000     ; Tile ID 1 - H
@@ -242,8 +243,10 @@ Main:
     move.w #0x0003, 0x00C00000     ; Tile ID 3 - L
     move.w #0x0007, 0x00C00000     ; Tile ID 7 - D
 
+; *** MAIN LOOP ***
 MainLoop:
     jmp mainLoop                    ; Infinite loop for now
+
 
 Palette:        ; Main palette to load
     dc.w 0x0000 ; Colour 0 - Transparent

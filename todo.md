@@ -1,3 +1,7 @@
 # TO DO:
-- Tutorial 4:
-- Probar
+- Tutorial 5:
+- Ver línea por línea y hacer los comments correspondientes
+- Agregar a readme
+* EQU
+* STOP
+

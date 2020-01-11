@@ -205,20 +205,19 @@ RegistersClear:
     move.l #0x00FF0000, a0    ; Moves first ram data address (containing 0) to a0
     movem.l (a0), d1-d7/a0-a7 ; Multiple move value at a0 (0) to all registers
     move #0x2700, sr          ; Init status register (no trace, A7 is Interrupt Stack Pointer, no interrupts, clear condition code bits)
-	jmp Main
+	
+	jmp Main				  ; Jump to main routine
 
 ; *** GLOBALS ***
-vdp_control				equ 0x00C00004
-vdp_data				equ 0x00C00000
+vdp_control				equ 0x00C00004 ; VDP control port global 
+vdp_data				equ 0x00C00000 ; VDP data port global
 
-vdp_write_palettes		equ 0xF0000000
-vdp_write_tiles			equ 0x40000000
-vdp_write_plane_a		equ 0x40000003
-vdp_write_sprite_tiles	equ 0x60000000
-vdp_write_sprite_table	equ 0x60000003
+vdp_write_palettes		equ 0xF0000000 ; VDP set ready to write palette. Special bit calculation. More info in sega2f doc section "6 ACCESS VDP RAM" or in tutorial 4
+vdp_write_tiles			equ 0x40000000 ; VDP set ready to write tiles
+vdp_write_plane_a		equ 0x40000003 ; VDP set ready to write to plane A
 
 ; *** ASCII LOOKUP TABLE ***
-ASCIIStart: equ 0x20 ; First ASCII code in table
+ASCIIStart 				equ 0x20 ; We start at ASCII position 32 decimal (20 hexa), skip first 31 chars
 
 ASCIIMap:
 	dc.b 0x00	; SPACE (ASCII code 0x20)
@@ -279,10 +278,9 @@ ASCIIMap:
 	dc.b 0x17	; W
 	dc.b 0x18	; X
 	dc.b 0x19	; Y
-	dc.b 0x1A	; Z (ASCII code 0x5A)
+	dc.b 0x1A	; Z
 
-; *** !!! DON'T KNOW WHY !!! ***
-	nop 0,8		; Align 8 bytes
+	nop			; 
 
 ; *** LOAD FONT SUBROUTINE ***
 LoadFont:
@@ -294,17 +292,17 @@ LoadFont:
    add.l    #vdp_write_tiles, d0 ; VRAM write cmd + VRAM destination address
    move.l   d0, vdp_control      ; Send address to VDP cmd port
 
-   subq.b   #0x1, d1             ; Num chars - 1
-   @CharCopy:
-   move.w   #0x07, d2            ; 8 longwords in tile
+   subq.b   #0x1, d1             ; Num chars - 1 (starts at 0)
+   @CharCopy:					 ; This works like a nested for loop
+   move.w   #0x07, d2            ; Sets d2: 8 longwords for each tile
    @LongCopy:
-   move.l   (a0)+, vdp_data      ; Copy one line of tile to VDP data port
+   move.l   (a0)+, vdp_data      ; Copy each line of tile to VDP data port
    dbra     d2, @LongCopy
    dbra     d1, @CharCopy
 
    rts
 
-; *** DRAW TEXT IN PLANE A SUBROUTINE ***
+; *** DRAW TEXT IN PLANE A SUBROUTINE (3A6) ***
 DrawTextPlaneA:
 	; a0 (l) - String address
 	; d0 (w) - First tile ID of font
@@ -313,7 +311,7 @@ DrawTextPlaneA:
 
 	clr.l    d3                     ; Clear d3 ready to work with
 	move.b   d1, d3                 ; Move Y coord (lower byte of d1) to d3
-	mulu.w   #0x0040, d3            ; Multiply Y by line width (H40 mode - 64 lines horizontally) to get Y offset
+	mulu.w   #0x0040, d3            ; Multiply Y by line width (H40 mode - 64 lines horizontally) to get Y offset position
 	ror.l    #0x8, d1               ; Shift X coord from upper to lower byte of d1
 	add.b    d1, d3                 ; Add X coord to offset
 	mulu.w   #0x2, d3               ; Convert to words
@@ -324,17 +322,17 @@ DrawTextPlaneA:
 	clr.l    d3                     ; Clear d3 ready to work with again
 	move.b   d2, d3                 ; Move palette ID (lower byte of d2) to d3
 	rol.l    #0x8, d3               ; Shift palette ID to bits 14 and 15 of d3
-	rol.l    #0x5, d3               ; Can only rol bits up to 8 places in one instruction
+	rol.l    #0x5, d3               ; Shift again because can only rol bits up to 8 places in one instruction
 
-	lea      ASCIIMap, a1           ; Load address of ASCII map into a1
+	lea      ASCIIMap, a1           ; Load address of ASCII lookup table into a1
 
 	@CharCopy:
-	move.b   (a0)+, d2              ; Move ASCII byte to lower byte of d2
+	move.b   (a0)+, d2              ; Move ASCII byte (string character) of string to lower byte of d2, and move to next character
 	cmp.b    #0x0, d2               ; Test if byte is zero (string terminator)
 	beq.b    @End                   ; If byte was zero, branch to end
 
-	sub.b    #ASCIIStart, d2        ; Subtract first ASCII code to get table entry index
-	move.b   (a1,d2.w), d3          ; Move tile ID from table (index in lower word of d2) to lower byte of d3
+	sub.b    #ASCIIStart, d2        ; Subtract offset to character to get character index at ASCII lookup table
+	move.b   (a1,d2.w), d3          ; Get ASCII value from lookup table. Gets value at address calculated from ASCII Map start + offset (index) and stores it in d3
 	add.w    d0, d3                 ; Offset tile ID by first tile ID in font
 	move.w   d3, vdp_data           ; Move palette and pattern IDs to VDP data port
 	jmp      @CharCopy              ; Next character
@@ -344,28 +342,28 @@ DrawTextPlaneA:
 
 ; *** MAIN PROGRAM ***
 Main:
-	move.w #0x8F02, vdp_control     ; Set autoincrement to 2 bytes
+	move.w #0x8F02, vdp_control     		; Set autoincrement to 2 bytes
 
 ; *** MOVE PALETTES TO CRAM ***
 	move.l #vdp_write_palettes, vdp_control ; Set up VDP to write to CRAM address 0x0000
 
-	lea Palettes, a0  ; Load address of Palettes into a0
-	move.l #0x1F, d0  ; 128 bytes of data (4 palettes, 32 longwords, minus 1 for counter) in palettes
+	lea Palettes, a0  						; Load address of Palettes into a0
+	move.l #0x1F, d0  						; 128 bytes of data (4 palettes, 32 longwords) in palettes
 
 	@ColourLoop:
-	move.l (a0)+, vdp_data ; Move data to VDP data port, and increment source address
+	move.l (a0)+, vdp_data 					; Move palette data to VDP data port, and increment source address
 	dbra d0, @ColourLoop
 
 ; *** LOAD FONT ***
-    lea        PixelFont, a0       ; Move font address to a0
-    move.l    #PixelFontVRAM, d0   ; Move VRAM dest address to d0
-    move.l    #PixelFontSizeT, d1  ; Move number of characters (font size in tiles) to d1
-    jsr        LoadFont            ; Jump to subroutine
+    lea PixelFont, a0       				; Move font address to a0
+    move.l #PixelFontVRAM, d0  				; Move VRAM dest address to d0
+    move.l #PixelFontSizeT, d1				; Move number of characters (font size in tiles) to d1
+    jsr LoadFont							; Jump to subroutine
 
 ; *** DRAW TEXT ***
 	lea		String1, a0		     ; String address
 	move.l	#PixelFontTileID, d0 ; First tile id
-	move.w	#0x0501, d1			 ; XY (5, 1)
+	move.w	#0x0501, d1			 ; Position in XXYY format (5, 1)
 	move.l	#0x0, d2			 ; Palette 0
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
 
@@ -393,7 +391,7 @@ Main:
 	move.l	#0x3, d2			 ; Palette 3
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
 
-	stop #$2700 ; Halt CPU
+	stop #$2700 				 ; Halt CPU
 
 Palettes:
 	dc.w 0x0000 ; Colour 0 - Transparent
@@ -466,15 +464,15 @@ Palettes:
 
 ; *** TEXT STRINGS *** (zero terminated, because we need an end indicator character)
 String1:
-	dc.b "ABCDEFGHIJKLM",0
-String2:
-	dc.b "NOPQRSTUVWXYZ",0
-String3:
-	dc.b "0123456789",0
-String4:
-	dc.b ",.?!()""':#+-/",0
-String5:
 	dc.b "HELLO WORLD BUT BETTER",0
+String2:
+	dc.b "ABCDEFGHIJKLM",0
+String3:
+	dc.b "NOPQRSTUVWXYZ",0
+String4:
+	dc.b "0123456789",0
+String5:
+	dc.b ",.?!()""':#+-/",0
 
 ; *** INCLUDE ART ASSETS ***
 	include 'fonts\pixelfont.asm'

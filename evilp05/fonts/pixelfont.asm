@@ -1,7 +1,4 @@
-	; Align 8 bytes
-	nop 0,8
-
-PixelFont: ; Font start address
+PixelFont: 		; Font start address
 
 	dc.l	$00000000
 	dc.l	$00000000

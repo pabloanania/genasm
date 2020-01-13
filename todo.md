@@ -1,2 +1,2 @@
 # TO DO:
-- Empezar con tutorial 6
+- Tutorial 7

@@ -26,7 +26,7 @@
             "label": "Run",
             "type": "shell",
             "windows": {
-                "command": "c:\\sgdk\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
+                "command": "..\\..\\..\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
             },
             "group": {
                 "kind": "build",

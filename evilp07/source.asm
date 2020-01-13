@@ -168,8 +168,8 @@ VDPInit:
     jmp ControllersInit      ; Jumps to controllers initialization
 
 VDPRegisters:
-    dc.b 0x20 ; 0: Horiz. interrupt on, plus bit 2 (unknown, but docs say it needs to be on)
-    dc.b 0x74 ; 1: Vert. interrupt on, display on, DMA on, V28 mode (28 cells vertically), + bit 2
+    dc.b 0x14 ; 0: Horiz. interrupt on, display on
+    dc.b 0x74 ; 1: Vert. interrupt on, screen blank off, DMA on, V28 mode (40 cells vertically), Genesis mode on
     dc.b 0x30 ; 2: Pattern table for Scroll Plane A at 0xC000 (bits 3-5)
     dc.b 0x40 ; 3: Pattern table for Window Plane at 0x10000 (bits 1-5)
     dc.b 0x05 ; 4: Pattern table for Scroll Plane B at 0xA000 (bits 0-2)
@@ -180,7 +180,7 @@ VDPRegisters:
     dc.b 0x00 ; 9: Unused
     dc.b 0x00 ; 10: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
     dc.b 0x08 ; 11: External interrupts on, V/H scrolling on
-    dc.b 0x81 ; 12: Shadows and highlights off, interlace off, H40 mode (40 cells horizontally)
+    dc.b 0x81 ; 12: Shadows and highlights off, interlace off, H40 mode (64 cells horizontally)
     dc.b 0x34 ; 13: Horiz. scroll table at 0xD000 (bits 0-5)
     dc.b 0x00 ; 14: Unused
     dc.b 0x00 ; 15: Autoincrement off
@@ -192,6 +192,7 @@ VDPRegisters:
     dc.b 0x00 ; 21: DMA source address lo byte
     dc.b 0x00 ; 22: DMA source address mid byte
     dc.b 0x00 ; 23: DMA source address hi byte, memory-to-VRAM mode (bits 6-7)
+
 
 ; *** CONTROLLERS INIT ***
 ControllersInit:
@@ -216,6 +217,65 @@ vdp_write_palettes		equ 0xF0000000 ; VDP set ready to write palette. Special bit
 vdp_write_tiles			equ 0x40000000 ; VDP set ready to write tiles
 vdp_write_plane_a		equ 0x40000003 ; VDP set ready to write to plane A
 vdp_write_sprite_table	equ 0x60000003 ; VDP set ready to write to sprite descriptor table
+
+pad_data_a				equ 0x00A10003 ; Port A data port global (Joystick 1)
+pad_data_b				equ 0x00A10005 ; Port B data port global (Joystick 2)
+pad_data_c				equ 0x00A10007 ; Port C data port global (EXT backport Genesis Model 1)
+pad_ctrl_a				equ 0x00A10009 ; Port A control port global
+pad_ctrl_b				equ 0x00A1000B ; Port B control port global
+pad_ctrl_c				equ 0x00A1000D ; Port C control port global
+
+pad_button_up           equ 0x0        ; Global for bit check each button of the gamepad
+pad_button_down         equ 0x1
+pad_button_left         equ 0x2
+pad_button_right        equ 0x3
+pad_button_a            equ 0xC
+pad_button_b            equ 0x4
+pad_button_c            equ 0x5
+pad_button_start        equ 0xD
+
+; *** MEMORY MAP (GLOBALS) ***
+vblank_counter		equ 0x00FF0000
+
+; *** READ JOYPAD 1 ROUTINE ***
+ReadPad1:
+	; d0 (w) - Return result
+    ; Bits format: 00SA0000 00CBRLDU. Only one byte by each read (two reads have to be made)
+
+	move.b  pad_data_a, d0     ; Read upper (first) byte from data port
+	rol.w   #0x8, d0           ; Move to upper byte of d0 (word)
+	move.b  #0x40, pad_data_a  ; Write bit 7 to data port (request a second read)
+	move.b  pad_data_a, d0     ; Read lower byte from data port
+	move.b  #0x00, pad_data_a  ; Put data port back to normal (write 0)
+	rts
+
+; *** TIMING ROUTINES ***
+WaitVBlankStart:
+	move.w  vdp_control, d0	; Move VDP status word to d0
+	andi.w  #0x0008, d0     ; AND with bit 4 (vblank), result in status register (CPU status flags)
+	bne     WaitVBlankStart ; Branch if not equal (to zero)
+	rts
+
+WaitVBlankEnd:
+	move.w  vdp_control, d0	; Move VDP status word to d0
+	andi.w  #0x0008, d0     ; AND with bit 4 (vblank), result in status register
+	beq     WaitVBlankEnd   ; Branch if equal (to zero)
+	rts
+
+WaitFrames:
+	; d0 - Number of frames to wait
+
+	move.l  vblank_counter, d1 ; Get start vblank count
+
+	@Wait:
+	move.l  vblank_counter, d2 ; Get end vblank count
+	subx.l  d1, d2             ; Calc delta, result in d2
+	cmp.l   d0, d2             ; Compare with num frames
+	bge     @End               ; Branch to end if greater or equal to num frames
+	jmp     @Wait              ; Try again
+	
+	@End:
+	rts
 
 ; *** LOAD TILES TO VDP ROUTINE ***
 LoadTiles:
@@ -244,6 +304,7 @@ LoadTiles:
 LoadSpriteTables:
 	; a0 - Sprite data address
 	; d0 - Number of sprites
+
 	move.l	#vdp_write_sprite_table, vdp_control    ; Set VDP ready to write sprites attributes
 	
 	subq.b	#0x1, d0				                ; 2 sprites attributes
@@ -260,7 +321,7 @@ SetSpritePosY:
 	; d0 (b) - Sprite ID
 	; d1 (w) - Y coord
 
-    ; Prepares VDP to write only Y position to this sprite ID by setting a special value to vdp_control and then sending the coordinate to vdp_data. It is not explained in the tutorial how this works
+    ; Prepares VDP to write only Y position to this sprite ID
 	clr.l	d3						; Clear d3
 	move.b	d0, d3					; Move sprite ID to d3
 	
@@ -323,7 +384,7 @@ Main:
 	move.w  #0x2, d0			; 2 sprites
 	jsr     LoadSpriteTables
 
-	; Set sprite positions (42E)
+	; Set sprite positions
 	move.w  #0x0,  d0	  ; Sprite ID
 	move.w  #0xB0, d1	  ; X coord
 	jsr     SetSpritePosX ; Set X pos
@@ -336,7 +397,68 @@ Main:
 	move.w  #0x90, d1	  ; Y coord
 	jsr     SetSpritePosY ; Set Y pos
 
-	stop #$2700 ; Halt CPU
+    move.l  #0x80, d4     ; X pos stored in d4
+	move.l  #0x80, d5     ; Y pos stored in d5
+
+; *** MAIN GAME LOOP ***
+GameLoop:
+    ; Read gamepad input and updates move variables (registers d4 to d6)
+	jsr     ReadPad1              ; Read pad 1 state, result in d0
+
+	move.l  #0x1, d6              ; Default sprite move speed speed
+
+	btst    #pad_button_a, d0     ; Check A button
+	bne     @NoA                  ; Branch if button off
+	move.l  #0x2, d6              ; Double sprite move speed speed
+	@NoA:
+
+	btst    #pad_button_b, d0     ; Check B button
+	bne     @NoB                  ; Branch if button off
+	move.l  #0x2, d6              ; Double sprite move speed speed
+	@NoB:
+
+	btst    #pad_button_c, d0     ; Check C button
+	bne     @NoC                  ; Branch if button off
+	move.l  #0x2, d6              ; Double sprite move speed speed
+	@NoC:
+
+	btst    #pad_button_start, d0 ; Check start button
+	bne     @NoStart              ; Branch if button off
+	move.l  #0x2, d6              ; Double sprite move speed speed
+	@NoStart:
+
+	btst    #pad_button_right, d0 ; Check right button
+	bne     @NoRight              ; Branch if button off
+	add.w   d6, d4                ; Increment sprite X pos
+	@NoRight:
+
+	btst    #pad_button_left, d0  ; Check left button
+	bne     @NoLeft               ; Branch if button off
+	sub.w   d6, d4                ; Decrement sprite X pos
+	@NoLeft:
+
+	btst    #pad_button_down, d0  ; Check down button
+	bne     @NoDown               ; Branch if button off
+	add.w   d6, d5                ; Increment sprite Y pos
+	@NoDown:
+
+	btst    #pad_button_up, d0    ; Check up button
+	bne     @NoUp                 ; Branch if button off
+	sub.w   d6, d5                ; Decrement sprite Y pos
+	@NoUp:
+
+    ; Update sprites during VBlank
+	jsr WaitVBlankStart   ; Wait for start of vblank
+
+	move.w  #0x0,  d0	  ; Sprite ID
+	move.w  d4, d1	      ; X coord
+	jsr     SetSpritePosX ; Set sprite X pos
+	move.w  d5, d1	      ; Y coord
+	jsr     SetSpritePosY ; Set sprite Y pos
+
+	jsr     WaitVBlankEnd ; Wait for end of vblank
+
+	jmp     GameLoop      ; Starts game loop again
 
 ; *** SPRITE DESCRIPTORS ***
 SpriteDescs:
@@ -362,10 +484,13 @@ SpriteDescs:
     include 'palettes\paletteset1.asm'
 
 HBlankInterrupt:
+    rte   ; Return
+
 VBlankInterrupt:
-    rte   ; Return from Interrupt
+    addi.l #0x1, vblank_counter    ; Increment vinterrupt counter
+    rte
  
 Exception:
-    rte   ; Return from Exception
+    stop #$2700 ; Halt CPU
  
 End       ; Very last line, end of ROM address

@@ -196,3 +196,4 @@ PixelFontSizeB equ (PixelFontEnd-PixelFont) ; Tamaño de la fuente en bytes
 
 ### Documentación
 - [M64K instruction set](http://wpage.unina.it/rcanonic/didattica/ce1/docs/68000.pdf)
+- [ASCII table and number base conversion](https://ascii.cl/conversion.htm)

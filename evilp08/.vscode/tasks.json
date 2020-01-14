@@ -1,0 +1,44 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compile",
+            "type": "shell",
+            "windows": {
+                "command": "..\\bin\\asm68k.exe",
+                "args": ["/p","${cwd}\\source.asm",",","${cwd}\\rom.bin"]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run",
+            "type": "shell",
+            "windows": {
+                "command": "..\\..\\..\\emu\\mess\\mess64.exe genesis -debug -nomaximize -cart rom.bin"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+            },
+            "problemMatcher": []
+        }
+    ]
+}

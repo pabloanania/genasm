@@ -131,12 +131,23 @@ Loop:
     RTS
 ```
 
-## ANDI
-- Sintaxis: ANDI \[máscara\], \[destino\]
-- Descripción: AND immediate. Realiza un AND con un número inmediato como máscara. Almacena el resultado en el destino
+## AND
+- Sintaxis: AND \[máscara\], \[destino\]
+- Descripción: AND lógico. Realiza un AND con un número inmediato o registro como máscara. Almacena el resultado en el destino
+- Variantes:
+1. ANDI: And immediate
 - Ejemplo:
 ```
-    ANDI.B #$F, D0 ; AND lógico a D0 con 0xF (1111 en binario)
+    AND.B #$F, D0 ; AND lógico a D0 con 0xF (1111 en binario)
+```
+
+## OR
+- Sintaxis: OR \[origen\], \[destino\]
+- Descripción: OR lógico. Realiza un OR al destino con el origen. Almacena el resultado en el destino
+1. ORI: Or immediate
+- Ejemplo:
+```
+    OR.L #$F0000000, D0 ; Obtiene los 4 bits (1 nybble) más significativos del registro D0
 ```
 
 ## BTST
@@ -191,6 +202,22 @@ PixelFontSizeB equ (PixelFontEnd-PixelFont) ; Tamaño de la fuente en bytes
 - Ejemplo:
 ```
     ROR.L    #$8, D1 ; Shiftea 8 bits a la derecha el valor en D1
+```
+
+## INCBIN
+- Sintaxis: INCBIN \[ruta de archivo\]
+- Descripción: Incluye un archivo a ser ensamblado. Va a residir en la ROM en la posición donde fue realizado el include
+- Ejemplo:
+```
+    INCBIN "ruta\destino.bin"
+```
+
+## INCLUDE
+- Sintaxis: INCLUDE \[ruta de archivo\]
+- Descripción: Incluye un archivo binario que no se ensamblará (se saltea a la hora de ensamblar)
+- Ejemplo:
+```
+    INCLUDE "ruta\destino.bin"
 ```
 
 
